@@ -81,7 +81,7 @@ class ConsoleBot(BotInterface):
 
     def main(self):
         '''Метод з реалізованою логікою взаємодії з користувачем'''
-        book = self.pickle_worker.load_data("contacts.dat")
+        book = self.pickle_worker.load_data()
         self.contact_worker = ContactWorker(book)
         self.phones_worker = PhonesWorker(book)
         self.birthday_worker = BirthdayWorker(book)
@@ -125,7 +125,7 @@ class ConsoleBot(BotInterface):
             else:
                 print("Invalid command.")
 
-        self.pickle_worker.save_data(book, "contacts.dat")
+        self.pickle_worker.save_data(book)
 
 
 if __name__ == "__main__":
