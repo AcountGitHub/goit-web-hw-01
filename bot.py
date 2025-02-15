@@ -3,19 +3,18 @@
 адресної книги у файл при закритті програми і відновлення при її запуску
 '''
 
-import pickle
-from contacts import AddressBook, AddressBookValueError
+from contacts import AddressBookValueError
 from bot_interface import BotInterface
-from workers import ContactWorker, PhonesWorker, BirthdayWorker
+from workers import ContactWorker, PhonesWorker, BirthdayWorker, PickleWorker
 
 
 class ConsoleBot(BotInterface):
     '''Клас реалізовує консольний бот'''
     def __init__(self):
-        self.contact_worker = ContactWorker()
-        self.phones_worker = PhonesWorker()
-        self.birthday_worker = BirthdayWorker()
-        self.book = self.load_data()
+        self.pickle_worker = PickleWorker()
+        self.contact_worker = None
+        self.phones_worker = None
+        self.birthday_worker = None
         self.args = None
 
     @staticmethod
@@ -45,7 +44,7 @@ class ConsoleBot(BotInterface):
     @input_error
     def add_contact(self):
         '''Метод додавання нового запису до адресної книги.'''
-        return self.contact_worker.update(self.args, self.book)
+        return self.contact_worker.update(self.args)
 
     @input_error
     def change_contact(self):
@@ -53,52 +52,39 @@ class ConsoleBot(BotInterface):
         Якщо контакт з заданим ім'ям не існує, то користувач отримає
         відповідне повідомлення
         '''
-        return self.phones_worker.update(self.args, self.book)
+        return self.phones_worker.update(self.args)
 
     @input_error
     def show_phone(self):
         '''Метод повертає телефонні номери для контакту з заданим ім'ям.'''
-        return self.phones_worker.show(self.args, self.book)
+        return self.phones_worker.show(self.args)
 
     @input_error
     def add_birthday(self):
         '''Метод додає дату народження для вказаного контакту.'''
-        return self.birthday_worker.update(self.args, self.book)
+        return self.birthday_worker.update(self.args)
 
     @input_error
     def show_birthday(self):
         '''Метод повертає дату народження для вказаного контакту'''
-        return self.birthday_worker.show(self.args, self.book)
+        return self.birthday_worker.show(self.args)
 
     def show_all(self):
         '''Метод повертає всі записи в адресній книзі'''
-        return self.contact_worker.show(self.args, self.book)
+        return self.contact_worker.show()
 
     def birthdays(self):
-        '''Метод повертає список користувачів, яких потрібно привітати по днях
+        '''Метод повертає список контактів, яких потрібно привітати по днях
         на наступному тижні
         '''
-        upcoming_birthdays = self.book.get_upcoming_birthdays()
-        return f"{'\n'.join(b['name'] + ": " + b['congratulation_date']
-                            for b in upcoming_birthdays)}"
-
-    def save_data(self, filename="addressbook.pkl"):
-        '''Метод Збереження адресної книги в файл'''
-        with open(filename, "wb") as f:
-            pickle.dump(self.book, f)
-
-    @staticmethod
-    def load_data(filename="addressbook.pkl"):
-        '''Метод Відновлення адресної книги з файлу'''
-        try:
-            with open(filename, "rb") as f:
-                return pickle.load(f)
-        except FileNotFoundError:
-            # Повернення нової адресної книги, якщо файл не знайдено
-            return AddressBook()
+        return self.birthday_worker.show_upcoming_birthdays()
 
     def main(self):
         '''Метод з реалізованою логікою взаємодії з користувачем'''
+        book = self.pickle_worker.load_data("contacts.dat")
+        self.contact_worker = ContactWorker(book)
+        self.phones_worker = PhonesWorker(book)
+        self.birthday_worker = BirthdayWorker(book)
         print("Welcome to the assistant bot!")
         while True:
             user_input = input("Enter a command: ")
@@ -139,7 +125,7 @@ class ConsoleBot(BotInterface):
             else:
                 print("Invalid command.")
 
-        self.save_data(self.book)
+        self.pickle_worker.save_data(book, "contacts.dat")
 
 
 if __name__ == "__main__":
